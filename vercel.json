@@ -1,0 +1,11 @@
+{
+  "buildCommand": "npm install",
+  "framework": "static",
+  "public": ".",
+  "rewrites": [
+    {
+      "source": "/api",
+      "destination": "/api/index.js"
+    }
+  ]
+}

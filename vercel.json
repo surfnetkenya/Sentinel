@@ -1,7 +1,0 @@
-json   {
-     "functions": {
-       "api/index.js": {
-         "maxDuration": 30
-       }
-     }
-   }

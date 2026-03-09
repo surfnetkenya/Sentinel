@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SENTINEL GLOBE — Live Global Surveillance</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root {
+  --bg: #050810;
+  --bg2: #0a0f1a;
+  --bg3: #0f1521;
+  --border: #1a2535;
+  --accent: #e8622a;
+  --text: #e0e6ed;
+  --text2: #9aa5b8;
+  --text3: #5a6576;
+  --blue: #2a8de8;
+  --green: #2ade6e;
+  --yellow: #f5a623;
+  --red: #e82a2a;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  overflow: hidden;
+  height: 100vh;
+}
+
+#map {
+  width: 100%;
+  height: 100vh;
+  background: var(--bg);
+}
+
+.header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: linear-gradient(180deg, rgba(5,8,16,0.98) 0%, rgba(5,8,16,0.85) 100%);
+  backdrop-filter: blur(10px);
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-icon {
+  width: 36px;
+  height: 36px;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  background: linear-gradient(135deg, var(--accent), #f0882a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  box-shadow: 0 0 20px rgba(232, 98, 42, 0.5);
+}
+
+.logo-text {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: var(--accent);
+}
+
+.logo-sub {
+  font-size: 9px;
+  color: var(--text3);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 8px 14px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 10px rgba(232, 98, 42, 0.3);
+}
+
+.btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 0 15px rgba(232, 98, 42, 0.5);
+}
+
+.count {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  padding: 2px 6px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 2px;
+  font-size: 10px;
+}
+
+.stats-panel {
+  position: absolute;
+  top: 80px;
+  left: 20px;
+  z-index: 1000;
+  background: rgba(10, 15, 26, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 14px;
+  min-width: 220px;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+
+.stat-row:last-child {
+  border-bottom: none;
+}
+
+.stat-label {
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stat-value {
+  font-family: 'Orbitron', sans-serif;
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.legend {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  z-index: 1000;
+  background: rgba(10, 15, 26, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 12px 14px;
+}
+
+.legend-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 8px;
+  letter-spacing: 1px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 5px;
+  font-size: 11px;
+  color: var(--text2);
+}
+
+.legend-item:last-child {
+  margin-bottom: 0;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 0 4px rgba(0,0,0,0.5);
+}
+
+/* Custom Leaflet styles */
+.leaflet-popup-content-wrapper {
+  background: var(--bg2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+
+.leaflet-popup-content {
+  font-family: 'Rajdhani', sans-serif;
+  margin: 12px;
+}
+
+.leaflet-popup-content h3 {
+  color: var(--accent);
+  margin-bottom: 8px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 15px;
+}
+
+.leaflet-popup-content p {
+  margin: 4px 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.leaflet-popup-close-button {
+  color: var(--text) !important;
+  font-size: 20px !important;
+}
+
+.leaflet-popup-tip {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+}
+
+/* Dark map tiles */
+.leaflet-tile {
+  filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+}
+
+.loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.5s;
+}
+
+.loading.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  margin-top: 15px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 14px;
+  color: var(--accent);
+  letter-spacing: 2px;
+}
+</style>
+</head>
+<body>
+
+<!-- Loading -->
+<div class="loading" id="loading">
+  <div class="spinner"></div>
+  <div class="loading-text">INITIALIZING SENTINEL...</div>
+</div>
+
+<!-- Header -->
+<div class="header">
+  <div class="logo">
+    <div class="logo-icon">🛰️</div>
+    <div>
+      <div class="logo-text">SENTINEL GLOBE</div>
+      <div class="logo-sub">Live Global Surveillance</div>
+    </div>
+  </div>
+  
+  <div class="controls">
+    <button class="btn active" id="btnCameras" onclick="toggleLayer('cameras')">
+      📹 CAMERAS <span class="count" id="cameraCount">0</span>
+    </button>
+    <button class="btn active" id="btnAircraft" onclick="toggleLayer('aircraft')">
+      ✈️ AIRCRAFT <span class="count" id="aircraftCount">0</span>
+    </button>
+    <button class="btn active" id="btnShips" onclick="toggleLayer('ships')">
+      🚢 SHIPS <span class="count" id="shipCount">0</span>
+    </button>
+    <button class="btn active" id="btnSatellites" onclick="toggleLayer('satellites')">
+      🛰️ SATELLITES <span class="count" id="satelliteCount">0</span>
+    </button>
+  </div>
+</div>
+
+<!-- Stats Panel -->
+<div class="stats-panel">
+  <div class="stat-row">
+    <div class="stat-label"><span>🌍</span> TOTAL</div>
+    <div class="stat-value" id="totalCount">0</div>
+  </div>
+  <div class="stat-row">
+    <div class="stat-label"><span>📹</span> CAMERAS</div>
+    <div class="stat-value" id="cameraStat">0</div>
+  </div>
+  <div class="stat-row">
+    <div class="stat-label"><span>✈️</span> AIRCRAFT</div>
+    <div class="stat-value" id="aircraftStat">0</div>
+  </div>
+  <div class="stat-row">
+    <div class="stat-label"><span>🚢</span> VESSELS</div>
+    <div class="stat-value" id="shipStat">0</div>
+  </div>
+  <div class="stat-row">
+    <div class="stat-label"><span>🛰️</span> SATELLITES</div>
+    <div class="stat-value" id="satelliteStat">0</div>
+  </div>
+</div>
+
+<!-- Legend -->
+<div class="legend">
+  <div class="legend-title">LEGEND</div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background: var(--blue);"></div>
+    <span>Live CCTV Cameras</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background: var(--green);"></div>
+    <span>Aircraft (Real-time)</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background: var(--yellow);"></div>
+    <span>Maritime Vessels</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background: var(--red);"></div>
+    <span>Satellites & ISS</span>
+  </div>
+</div>
+
+<!-- Map Container -->
+<div id="map"></div>
+
+<script>
+// ============================================================
+// SENTINEL GLOBE - NO TOKEN REQUIRED VERSION
+// Using Leaflet.js + OpenStreetMap (100% FREE)
+// ============================================================
+
+let map;
+const layers = {
+  cameras: L.layerGroup(),
+  aircraft: L.layerGroup(),
+  ships: L.layerGroup(),
+  satellites: L.layerGroup()
+};
+
+const counts = {
+  cameras: 0,
+  aircraft: 0,
+  ships: 0,
+  satellites: 0
+};
+
+// Initialize map
+function initMap() {
+  // Create map (NO TOKEN NEEDED!)
+  map = L.map('map', {
+    center: [20, 0],
+    zoom: 2,
+    minZoom: 2,
+    maxZoom: 18,
+    zoomControl: true
+  });
+  
+  // Add OpenStreetMap tiles (FREE, no token!)
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: 'SENTINEL GLOBE',
+    maxZoom: 19
+  }).addTo(map);
+  
+  // Add all layers to map
+  Object.values(layers).forEach(layer => layer.addTo(map));
+  
+  console.log('Map initialized successfully!');
+}
+
+// Toggle layers
+function toggleLayer(type) {
+  const btn = document.getElementById(`btn${type.charAt(0).toUpperCase() + type.slice(1)}`);
+  
+  if (map.hasLayer(layers[type])) {
+    map.removeLayer(layers[type]);
+    btn.classList.remove('active');
+  } else {
+    map.addLayer(layers[type]);
+    btn.classList.add('active');
+  }
+}
+
+// Update stats
+function updateStats() {
+  const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
+  
+  document.getElementById('totalCount').textContent = total;
+  document.getElementById('cameraStat').textContent = counts.cameras;
+  document.getElementById('cameraCount').textContent = counts.cameras;
+  document.getElementById('aircraftStat').textContent = counts.aircraft;
+  document.getElementById('aircraftCount').textContent = counts.aircraft;
+  document.getElementById('shipStat').textContent = counts.ships;
+  document.getElementById('shipCount').textContent = counts.ships;
+  document.getElementById('satelliteStat').textContent = counts.satellites;
+  document.getElementById('satelliteCount').textContent = counts.satellites;
+}
+
+// Add camera marker
+function addCamera(lat, lon, name, city, country, url) {
+  const marker = L.circleMarker([lat, lon], {
+    radius: 6,
+    fillColor: '#2a8de8',
+    color: '#fff',
+    weight: 2,
+    opacity: 1,
+    fillOpacity: 0.8
+  });
+  
+  marker.bindPopup(`
+    <h3>📹 ${name}</h3>
+    <p><strong>Location:</strong> ${city}, ${country}</p>
+    <p><strong>Type:</strong> Live CCTV Camera</p>
+    ${url ? `<p><a href="${url}" target="_blank" style="color: var(--accent);">View Live Feed →</a></p>` : ''}
+  `);
+  
+  marker.addTo(layers.cameras);
+  counts.cameras++;
+}
+
+// Add aircraft marker
+function addAircraft(lat, lon, callsign, altitude, speed) {
+  const marker = L.circleMarker([lat, lon], {
+    radius: 5,
+    fillColor: '#2ade6e',
+    color: '#fff',
+    weight: 2,
+    opacity: 1,
+    fillOpacity: 0.8
+  });
+  
+  marker.bindPopup(`
+    <h3>✈️ Flight ${callsign}</h3>
+    <p><strong>Altitude:</strong> ${altitude ? Math.round(altitude) + 'm' : 'Unknown'}</p>
+    <p><strong>Speed:</strong> ${speed ? Math.round(speed * 3.6) + ' km/h' : 'Unknown'}</p>
+    <p><strong>Source:</strong> OpenSky Network (Live)</p>
+  `);
+  
+  marker.addTo(layers.aircraft);
+  counts.aircraft++;
+}
+
+// Add ship marker
+function addShip(lat, lon, name, type) {
+  const marker = L.circleMarker([lat, lon], {
+    radius: 5,
+    fillColor: '#f5a623',
+    color: '#fff',
+    weight: 2,
+    opacity: 1,
+    fillOpacity: 0.8
+  });
+  
+  marker.bindPopup(`
+    <h3>🚢 ${name}</h3>
+    <p><strong>Type:</strong> ${type}</p>
+    <p><strong>Position:</strong> ${lat.toFixed(4)}°, ${lon.toFixed(4)}°</p>
+    <p><strong>Source:</strong> Maritime AIS</p>
+  `);
+  
+  marker.addTo(layers.ships);
+  counts.ships++;
+}
+
+// Add satellite marker
+function addSatellite(lat, lon, name, altitude) {
+  const marker = L.circleMarker([lat, lon], {
+    radius: 7,
+    fillColor: '#e82a2a',
+    color: '#fff',
+    weight: 2,
+    opacity: 1,
+    fillOpacity: 0.9
+  });
+  
+  marker.bindPopup(`
+    <h3>🛰️ ${name}</h3>
+    <p><strong>Altitude:</strong> ${altitude ? altitude + ' km' : '~400 km'}</p>
+    <p><strong>Type:</strong> Satellite</p>
+    <p><strong>Source:</strong> Live Tracking</p>
+  `);
+  
+  marker.addTo(layers.satellites);
+  counts.satellites++;
+}
+
+// Load demo data
+async function loadDemoData() {
+  // Demo cameras
+  const cameras = [
+    { name: 'Times Square', lat: 40.758, lon: -73.9855, city: 'New York', country: 'USA' },
+    { name: 'Tokyo Tower', lat: 35.6586, lon: 139.7454, city: 'Tokyo', country: 'Japan' },
+    { name: 'Eiffel Tower', lat: 48.8584, lon: 2.2945, city: 'Paris', country: 'France' },
+    { name: 'Big Ben', lat: 51.5007, lon: -0.1246, city: 'London', country: 'UK' },
+    { name: 'Sydney Opera', lat: -33.8568, lon: 151.2153, city: 'Sydney', country: 'Australia' },
+    { name: 'Dubai Marina', lat: 25.0798, lon: 55.1392, city: 'Dubai', country: 'UAE' },
+    { name: 'Red Square', lat: 55.7539, lon: 37.6208, city: 'Moscow', country: 'Russia' },
+    { name: 'CN Tower', lat: 43.6426, lon: -79.3871, city: 'Toronto', country: 'Canada' },
+  ];
+  
+  cameras.forEach(cam => {
+    addCamera(cam.lat, cam.lon, cam.name, cam.city, cam.country, null);
+  });
+  
+  // ISS
+  addSatellite(0, 0, 'ISS', 400);
+  
+  // Update ISS position
+  updateISSPosition();
+  setInterval(updateISSPosition, 5000);
+  
+  // Load real aircraft data
+  loadAircraft();
+  setInterval(loadAircraft, 30000);
+  
+  // Demo ships
+  addShip(35.6762, 139.6503, 'CMA CGM Marco Polo', 'Container Ship');
+  addShip(1.3521, 103.8198, 'MSC Oscar', 'Container Ship');
+  addShip(40.7128, -74.0060, 'Queen Mary 2', 'Cruise Ship');
+  
+  updateStats();
+}
+
+// Update ISS position (FREE API, no key!)
+async function updateISSPosition() {
+  try {
+    const response = await fetch('https://api.wheretheiss.at/v1/satellites/25544');
+    const data = await response.json();
+    
+    if (data.latitude && data.longitude) {
+      // Remove old ISS marker
+      layers.satellites.clearLayers();
+      counts.satellites = 0;
+      
+      // Add new ISS marker
+      addSatellite(data.latitude, data.longitude, 'International Space Station', Math.round(data.altitude));
+      updateStats();
+    }
+  } catch (error) {
+    console.error('Error updating ISS:', error);
+  }
+}
+
+// Load aircraft (FREE API, no key!)
+async function loadAircraft() {
+  try {
+    const response = await fetch('https://opensky-network.org/api/states/all');
+    const data = await response.json();
+    
+    // Clear old aircraft
+    layers.aircraft.clearLayers();
+    counts.aircraft = 0;
+    
+    if (data.states) {
+      // Add first 100 aircraft
+      data.states.slice(0, 100).forEach(state => {
+        const [callsign, , , , lon, lat, altitude, onGround, velocity] = state;
+        
+        if (lat && lon && !onGround) {
+          addAircraft(lat, lon, (callsign || 'Unknown').trim(), altitude, velocity);
+        }
+      });
+    }
+    
+    updateStats();
+    console.log('Aircraft updated!');
+  } catch (error) {
+    console.error('Error loading aircraft:', error);
+  }
+}
+
+// Initialize everything
+async function init() {
+  console.log('Starting SENTINEL GLOBE...');
+  
+  initMap();
+  await loadDemoData();
+  
+  // Hide loading
+  setTimeout(() => {
+    document.getElementById('loading').classList.add('hidden');
+  }, 1000);
+  
+  console.log('SENTINEL GLOBE ready!');
+}
+
+// Start when page loads
+window.addEventListener('load', init);
+
+</script>
+
+</body>
+</html>

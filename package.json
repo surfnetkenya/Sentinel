@@ -1,13 +1,18 @@
 {
   "name": "sentinel-global",
   "version": "2.0.0",
-  "description": "SENTINEL Global Intelligence Platform - Powered by Google Gemini",
-  "private": true,
   "type": "module",
+  "description": "SENTINEL Global Intelligence Platform with Phase 2 Enhancements",
+  "main": "api/index.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "vercel build",
+    "deploy": "vercel --prod"
+  },
   "dependencies": {
-    "@google/generative-ai": "^0.1.3"
+    "node-fetch": "^3.3.2"
   },
   "engines": {
-    "node": "24.x"
+    "node": ">=18.x"
   }
 }

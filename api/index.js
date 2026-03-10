@@ -1,9 +1,7 @@
-// SENTINEL Backend - Vercel Edge Function
-// Routes to Railway Python API for OSINT analysis
+// SENTINEL Backend - Vercel Serverless Function
+// Routes intelligence analysis to Google Gemini & Python FastAPI
 
-import fetch from 'node-fetch';
-
-const PYTHON_API_URL = process.env.PYTHON_API_URL || 'pythonapi-production-ea0b.up.railway.app';
+const PYTHON_API_URL = process.env.PYTHON_API_URL || 'https://your-railway-app.up.railway.app';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 export default async function handler(req, res) {
@@ -21,94 +19,103 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
   
-  const { action, query } = req.body;
+  const { action, query, region } = req.body;
   
   // ═══════════════════════════════════════════════════════════
-  // ROUTE 1: ANALYZE (Python API)
+  // ANALYZE ACTION (Python NLP + Gemini AI)
   // ═══════════════════════════════════════════════════════════
   
   if (action === 'analyze') {
     try {
-      console.log(`📡 Forwarding to Python API: ${PYTHON_API_URL}/analyze`);
+      console.log(`📡 Analyzing: "${query}" (Region: ${region})`);
       
-      // Call Railway Python API
-      const response = await fetch(`${PYTHON_API_URL}/analyze`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: query }),
-        timeout: 10000 // 10 second timeout
-      });
+      // Step 1: Call Python API for NLP analysis
+      let pythonData = null;
       
-      if (!response.ok) {
-        throw new Error(`Python API error: ${response.status}`);
+      try {
+        const pythonResponse = await fetch(`${PYTHON_API_URL}/analyze`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: query }),
+          signal: AbortSignal.timeout(12000)
+        });
+        
+        if (pythonResponse.ok) {
+          pythonData = await pythonResponse.json();
+          console.log('✅ Python API success');
+        }
+      } catch (pythonError) {
+        console.warn('⚠️ Python API unavailable:', pythonError.message);
       }
       
-      const data = await response.json();
+      // Fallback if Python API fails
+      if (!pythonData) {
+        pythonData = {
+          entities: {
+            locations: extractBasicLocations(query),
+            people: [],
+            organizations: []
+          },
+          sentiment: {
+            polarity: -0.2,
+            label: 'Neutral (Fallback)',
+            subjectivity: 0.5
+          },
+          keywords: query.split(' ').slice(0, 5)
+        };
+      }
       
-      console.log('✅ Python API response received');
+      // Step 2: Optional - Call Gemini for deep analysis
+      let geminiSummary = `Intelligence analysis for: ${query}`;
       
+      if (GEMINI_API_KEY) {
+        try {
+          const geminiResponse = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{
+                  parts: [{
+                    text: `Provide a brief 2-sentence intelligence summary for: ${query}`
+                  }]
+                }]
+              }),
+              signal: AbortSignal.timeout(10000)
+            }
+          );
+          
+          if (geminiResponse.ok) {
+            const geminiData = await geminiResponse.json();
+            geminiSummary = geminiData.candidates[0].content.parts[0].text;
+            console.log('✅ Gemini AI success');
+          }
+        } catch (geminiError) {
+          console.warn('⚠️ Gemini unavailable:', geminiError.message);
+        }
+      }
+      
+      // Return combined result
       return res.status(200).json({
         success: true,
         query: query,
-        entities: data.entities || {},
-        sentiment: data.sentiment || { polarity: 0, label: 'neutral' },
-        keywords: data.keywords || [],
-        summary: `Analysis complete for: ${query}`,
+        region: region,
+        entities: pythonData.entities,
+        sentiment: pythonData.sentiment,
+        keywords: pythonData.keywords,
+        summary: geminiSummary,
         timestamp: new Date().toISOString()
       });
       
     } catch (error) {
-      console.error('❌ Python API error:', error.message);
+      console.error('❌ Analysis error:', error);
       
-      // GRACEFUL FALLBACK: Return mock data if Python API is down
-      return res.status(200).json({
-        success: false,
-        query: query,
-        entities: {
-          locations: extractBasicLocations(query),
-          people: [],
-          organizations: []
-        },
-        sentiment: {
-          polarity: -0.2,
-          label: 'Neutral (Fallback)',
-          subjectivity: 0.5
-        },
-        keywords: query.split(' ').slice(0, 5),
-        summary: `Fallback analysis for: ${query}`,
-        warning: 'Python API unavailable - using basic extraction',
-        timestamp: new Date().toISOString()
-      });
-    }
-  }
-  
-  // ═══════════════════════════════════════════════════════════
-  // ROUTE 2: TRANSLATE (Python API)
-  // ═══════════════════════════════════════════════════════════
-  
-  if (action === 'translate') {
-    const { text, target = 'en' } = req.body;
-    
-    try {
-      const response = await fetch(`${PYTHON_API_URL}/translate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, target }),
-        timeout: 10000
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Translation error: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      return res.status(200).json(data);
-      
-    } catch (error) {
-      console.error('Translation error:', error.message);
       return res.status(500).json({
-        error: 'Translation service unavailable',
-        original: text
+        success: false,
+        error: 'Analysis failed',
+        message: error.message,
+        query: query
       });
     }
   }
@@ -119,7 +126,7 @@ export default async function handler(req, res) {
   
   return res.status(400).json({
     error: 'Invalid action',
-    validActions: ['analyze', 'translate']
+    validActions: ['analyze']
   });
 }
 
@@ -128,12 +135,16 @@ export default async function handler(req, res) {
 // ═══════════════════════════════════════════════════════════
 
 function extractBasicLocations(text) {
+  if (!text) return [];
+  
   const keywords = text.toLowerCase();
   const locations = [];
   
   const knownLocations = [
-    'gaza', 'israel', 'ukraine', 'russia', 'kyiv', 'moscow',
-    'taiwan', 'china', 'iran', 'syria', 'yemen', 'iraq'
+    'gaza', 'israel', 'ukraine', 'russia', 'kyiv', 'moscow', 'taiwan',
+    'china', 'iran', 'syria', 'yemen', 'iraq', 'afghanistan', 'lebanon',
+    'damascus', 'beirut', 'tehran', 'baghdad', 'kabul', 'beijing',
+    'north korea', 'pyongyang', 'somalia', 'sudan', 'ethiopia'
   ];
   
   knownLocations.forEach(loc => {
@@ -142,5 +153,5 @@ function extractBasicLocations(text) {
     }
   });
   
-  return locations.length > 0 ? locations : ['Unknown'];
+  return locations.length > 0 ? locations : [];
 }

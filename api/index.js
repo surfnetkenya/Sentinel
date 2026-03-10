@@ -3,7 +3,7 @@
 
 import fetch from 'node-fetch';
 
-const PYTHON_API_URL = process.env.PYTHON_API_URL || 'https://your-generated-name.up.railway.app';
+const PYTHON_API_URL = process.env.PYTHON_API_URL || 'pythonapi-production-ea0b.up.railway.app';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 export default async function handler(req, res) {

@@ -10,6 +10,9 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const TWITTER_BEARER_TOKEN = process.env.TWITTER_BEARER_TOKEN;
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
+// Replace with the domain Railway just generated for you
+const PYTHON_AI_URL = "pythonapi-production-ea0b.up.railway.app";
+
 export default async function handler(req, res) {
   // CORS headers
   res.setHeader("Access-Control-Allow-Origin", "*");

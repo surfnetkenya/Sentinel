@@ -4,18 +4,33 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SENTINEL — Global Intelligence Platform</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23e8622a'/%3E%3Cstop offset='100%25' style='stop-color:%23f0882a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpolygon points='50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5' fill='url(%23g)' stroke='%23fff' stroke-width='3'/%3E%3Ccircle cx='50' cy='50' r='15' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
 <style>
 :root {
-  --threat-red: #e82a2a;
-  --threat-amber: #f5a623;
-  --threat-green: #2ade6e;
   --bg: #060a0f;
   --bg2: #0a1018;
+  --bg3: #0f1820;
   --border: #1a2d3d;
-  --text: #c8d8e8;
+  --border2: #1f3a4f;
   --accent: #e8622a;
+  --accent2: #f0882a;
+  --amber: #f5a623;
+  --green: #2ade6e;
+  --red: #e82a2a;
+  --blue: #2a8de8;
+  --cyan: #2adee8;
+  --text: #c8d8e8;
+  --text2: #7a9ab0;
+  --text3: #3a5a70;
+  --mono: 'Share Tech Mono', monospace;
+  --display: 'Barlow Condensed', sans-serif;
+  --body: 'Barlow', sans-serif;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -23,8 +38,36 @@
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'Arial', sans-serif;
+  font-family: var(--body);
+  min-height: 100vh;
   overflow-x: hidden;
+}
+
+/* Scanline overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.07) 2px,
+    rgba(0,0,0,0.07) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Noise texture */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9998;
+  opacity: 0.3;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -33,60 +76,130 @@ body {
 
 .header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 15px 24px;
+  justify-content: space-between;
+  padding: 12px 24px;
   background: var(--bg2);
-  border-bottom: 2px solid var(--border);
+  border-bottom: 1px solid var(--border2);
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .logo {
-  font-size: 24px;
-  font-weight: bold;
-  color: var(--accent);
-  letter-spacing: 2px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-.threat-indicator {
+.logo-icon {
+  width: 36px;
+  height: 36px;
+  border: 2px solid var(--accent);
   display: flex;
-  gap: 12px;
   align-items: center;
+  justify-content: center;
+  position: relative;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  background: rgba(232, 98, 42, 0.1);
+}
+
+.logo-icon svg { 
+  width: 18px; 
+  height: 18px; 
+  fill: var(--accent); 
+}
+
+.logo-text {
+  font-family: var(--display);
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: var(--text);
+}
+
+.logo-text span {
+  color: var(--accent);
+}
+
+.logo-sub {
+  font-size: 11px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.live-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(232, 42, 42, 0.1);
+  border: 1px solid var(--red);
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--red);
+  letter-spacing: 1px;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--red);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
 }
 
 /* ═══════════════════════════════════════════════════════════
-   GLOBAL TENSION INDEX (NEW)
+   PHASE 2: GLOBAL TENSION INDEX WIDGET
    ═══════════════════════════════════════════════════════════ */
 
 .tension-widget {
   background: var(--bg2);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 12px 20px;
-  min-width: 250px;
+  border-radius: 6px;
+  padding: 10px 18px;
+  min-width: 260px;
 }
 
 .tension-label {
-  font-size: 11px;
-  color: #7a9ab0;
+  font-size: 10px;
+  color: var(--text3);
   text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 8px;
+  letter-spacing: 1.2px;
+  margin-bottom: 6px;
+  font-family: var(--mono);
 }
 
 .tension-gauge {
   position: relative;
-  height: 40px;
-  background: #0f1820;
-  border-radius: 20px;
+  height: 35px;
+  background: var(--bg);
+  border-radius: 18px;
   overflow: hidden;
+  border: 1px solid var(--border);
 }
 
 .tension-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--threat-green), var(--threat-amber), var(--threat-red));
+  background: linear-gradient(90deg, var(--green), var(--amber), var(--red));
   width: 0%;
-  transition: width 0.8s ease;
-  border-radius: 20px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 18px;
 }
 
 .tension-needle {
@@ -94,177 +207,537 @@ body {
   top: 50%;
   left: 0%;
   transform: translate(-50%, -50%);
-  width: 4px;
-  height: 30px;
+  width: 3px;
+  height: 26px;
   background: white;
   border-radius: 2px;
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
-  transition: left 0.8s ease;
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.9), 0 0 4px rgba(0, 0, 0, 0.8);
+  transition: left 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 10;
 }
 
 .tension-value {
   position: absolute;
   top: 50%;
-  right: 15px;
+  right: 12px;
   transform: translateY(-50%);
-  font-size: 16px;
-  font-weight: bold;
+  font-size: 15px;
+  font-weight: 700;
   color: white;
-  text-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
+  font-family: var(--mono);
+  text-shadow: 0 0 6px rgba(0, 0, 0, 0.9);
+}
+
+.world-clocks {
+  display: flex;
+  gap: 12px;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.clock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.clock-label {
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.clock-time {
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.btn-ghost {
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text2);
+  cursor: pointer;
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  transition: all 0.3s;
+}
+
+.btn-ghost:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.btn-ghost.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   GOOGLE TRANSLATE WIDGET
+   ═══════════════════════════════════════════════════════════ */
+
+#google_translate_element {
+  position: fixed;
+  top: 70px;
+  right: 20px;
+  z-index: 9999;
+  background: var(--bg2);
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.goog-te-banner-frame { display: none !important; }
+.goog-te-menu-value { color: var(--text) !important; }
+.goog-te-gadget { font-family: var(--mono) !important; font-size: 11px !important; }
+
+/* ═══════════════════════════════════════════════════════════
+   REGION TABS & GLOBE BUTTON
+   ═══════════════════════════════════════════════════════════ */
+
+.region-tabs {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 24px;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  align-items: center;
+}
+
+.filter-btn {
+  padding: 8px 16px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  cursor: pointer;
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+
+.filter-btn:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.filter-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TICKER
+   ═══════════════════════════════════════════════════════════ */
+
+.threat-bar {
+  display: flex;
+  align-items: center;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+  height: 36px;
+}
+
+.threat-label {
+  padding: 0 20px;
+  background: var(--red);
+  color: white;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.ticker-wrap {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.ticker {
+  display: flex;
+  animation: scroll 60s linear infinite;
+}
+
+.ticker-item {
+  padding: 0 40px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text2);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ticker-item span {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+@keyframes scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
 
 /* ═══════════════════════════════════════════════════════════
    MAIN LAYOUT
    ═══════════════════════════════════════════════════════════ */
 
-.main-container {
+.main {
   display: grid;
-  grid-template-columns: 350px 1fr;
-  height: calc(100vh - 70px);
+  grid-template-columns: 280px 1fr 360px;
+  height: calc(100vh - 180px);
 }
 
-/* ═══════════════════════════════════════════════════════════
-   SIDEBAR (Intelligence Feed)
-   ═══════════════════════════════════════════════════════════ */
-
-.sidebar {
+.sidebar-left, .sidebar-right {
   background: var(--bg2);
-  border-right: 1px solid var(--border);
   overflow-y: auto;
+  position: relative;
+}
+
+.sidebar-left {
+  border-right: 1px solid var(--border);
   padding: 20px;
 }
 
-.search-box {
+.sidebar-right {
+  border-left: 1px solid var(--border);
+  padding: 20px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   COLLAPSIBLE SIDEBARS
+   ═══════════════════════════════════════════════════════════ */
+
+.collapse-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 30px;
+  height: 60px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  color: var(--accent);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: all 0.3s;
+  z-index: 10;
+}
+
+.collapse-btn:hover {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 0 10px rgba(232, 98, 42, 0.5);
+}
+
+.collapse-left {
+  left: 0;
+  border-radius: 0 4px 4px 0;
+}
+
+.collapse-right {
+  right: 0;
+  border-radius: 4px 0 0 4px;
+}
+
+.sidebar-left.collapsed {
+  width: 50px !important;
+  min-width: 50px !important;
+  overflow: hidden;
+}
+
+.sidebar-left.collapsed > *:not(.collapse-btn) {
+  display: none;
+}
+
+.sidebar-right.collapsed {
+  width: 50px !important;
+  min-width: 50px !important;
+  overflow: hidden;
+}
+
+.sidebar-right.collapsed > *:not(.collapse-btn) {
+  display: none;
+}
+
+.main.left-collapsed {
+  grid-template-columns: 50px 1fr 360px;
+}
+
+.main.right-collapsed {
+  grid-template-columns: 280px 1fr 50px;
+}
+
+.main.both-collapsed {
+  grid-template-columns: 50px 1fr 50px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SEARCH & CONTROLS
+   ═══════════════════════════════════════════════════════════ */
+
+.section-header {
+  font-family: var(--display);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.count {
+  font-family: var(--mono);
+  color: var(--accent);
+  font-size: 12px;
+}
+
+.search-input {
   width: 100%;
   padding: 12px;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 4px;
   color: var(--text);
-  font-size: 14px;
-  margin-bottom: 20px;
+  font-size: 13px;
+  font-family: var(--body);
+  margin-bottom: 12px;
 }
 
-.analyze-btn {
+.search-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.search-btn {
   width: 100%;
   padding: 12px;
   background: var(--accent);
   color: white;
   border: none;
   border-radius: 4px;
-  font-weight: bold;
+  font-weight: 700;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 1px;
   cursor: pointer;
+  transition: all 0.3s;
   margin-bottom: 20px;
-  transition: background 0.3s;
 }
 
-.analyze-btn:hover {
-  background: #f0882a;
+.search-btn:hover {
+  background: var(--accent2);
 }
 
-.analyze-btn:disabled {
-  background: #555;
+.search-btn:disabled {
+  background: var(--bg3);
   cursor: not-allowed;
+  opacity: 0.5;
 }
 
-.feed-item {
+/* ═══════════════════════════════════════════════════════════
+   FEED
+   ═══════════════════════════════════════════════════════════ */
+
+.center-panel {
+  overflow-y: auto;
+  padding: 20px;
   background: var(--bg);
+}
+
+.article-card {
+  background: var(--bg2);
   border: 1px solid var(--border);
   border-radius: 4px;
-  padding: 15px;
-  margin-bottom: 15px;
+  padding: 16px;
+  margin-bottom: 16px;
   transition: all 0.3s;
 }
 
-.feed-item:hover {
+.article-card:hover {
   border-color: var(--accent);
 }
 
-/* SENTIMENT GLOW (NEW) */
-.feed-item.critical-sentiment {
-  border-color: var(--threat-red);
-  box-shadow: 0 0 20px rgba(232, 42, 42, 0.6);
-  animation: pulse-red 2s infinite;
+/* PHASE 2: CRITICAL SENTIMENT GLOW */
+.article-card.critical-sentiment {
+  border-color: var(--red);
+  box-shadow: 0 0 25px rgba(232, 42, 42, 0.7);
+  animation: pulse-red-sentinel 2s infinite;
 }
 
-@keyframes pulse-red {
-  0%, 100% { box-shadow: 0 0 20px rgba(232, 42, 42, 0.6); }
-  50% { box-shadow: 0 0 30px rgba(232, 42, 42, 0.9); }
+@keyframes pulse-red-sentinel {
+  0%, 100% { 
+    box-shadow: 0 0 25px rgba(232, 42, 42, 0.7);
+    border-color: var(--red);
+  }
+  50% { 
+    box-shadow: 0 0 35px rgba(232, 42, 42, 1);
+    border-color: #ff4444;
+  }
 }
 
-.feed-title {
-  font-size: 14px;
-  font-weight: bold;
-  color: var(--accent);
-  margin-bottom: 8px;
-}
-
-.feed-summary {
-  font-size: 13px;
-  color: #9aa5b8;
-  line-height: 1.5;
+.article-headline {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
   margin-bottom: 10px;
+  line-height: 1.4;
 }
 
-.feed-meta {
+.article-summary {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+.article-meta {
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-size: 11px;
-  color: #5a6576;
+  color: var(--text3);
+  font-family: var(--mono);
 }
 
-.sentiment-badge {
-  padding: 4px 10px;
+.source-badge {
+  padding: 4px 8px;
   border-radius: 3px;
-  font-weight: bold;
+  font-weight: 600;
   font-size: 10px;
   text-transform: uppercase;
 }
 
-.sentiment-positive { background: var(--threat-green); color: white; }
-.sentiment-neutral { background: var(--threat-amber); color: white; }
-.sentiment-negative { background: var(--threat-red); color: white; }
+.src-military { background: var(--red); color: white; }
+.src-intelligence { background: var(--blue); color: white; }
+.src-news { background: var(--amber); color: white; }
+
+.sentiment-badge {
+  padding: 4px 10px;
+  border-radius: 3px;
+  font-weight: 700;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.sentiment-positive { background: var(--green); color: white; }
+.sentiment-neutral { background: var(--amber); color: white; }
+.sentiment-negative { background: var(--red); color: white; }
+
+/* PHASE 2: PRIORITY BADGE */
+.priority-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-left: 8px;
+  animation: blink-priority 1.5s infinite;
+}
+
+.priority-critical {
+  background: var(--red);
+  color: white;
+}
+
+@keyframes blink-priority {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.translate-btn {
+  padding: 4px 10px;
+  background: var(--blue);
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: 8px;
+  letter-spacing: 0.5px;
+  transition: all 0.3s;
+}
+
+.translate-btn:hover {
+  background: #3a9df8;
+}
 
 /* ═══════════════════════════════════════════════════════════
-   MAP CONTAINER
+   MAP
    ═══════════════════════════════════════════════════════════ */
 
-#mainMap {
+#globeContainer {
+  position: relative;
   width: 100%;
   height: 100%;
-  position: relative;
 }
 
-/* MAP FLASH ANIMATION (NEW) */
-@keyframes map-flash {
-  0%, 100% { filter: brightness(1); }
-  25%, 75% { filter: brightness(1.5) hue-rotate(10deg); }
-  50% { filter: brightness(2) hue-rotate(20deg); }
+#globeMap {
+  width: 100%;
+  height: 100%;
 }
 
-#mainMap.flash-alert {
-  animation: map-flash 1s ease-in-out;
+/* PHASE 2: MAP FLASH ANIMATION */
+@keyframes map-flash-alert {
+  0%, 100% { 
+    filter: brightness(1) contrast(1);
+  }
+  20%, 80% { 
+    filter: brightness(1.3) contrast(1.1) hue-rotate(5deg);
+  }
+  50% { 
+    filter: brightness(1.6) contrast(1.2) hue-rotate(10deg) saturate(1.2);
+  }
 }
 
-/* PULSING MARKER STYLES (NEW) */
-.conflict-marker {
-  border-radius: 50%;
-  background: rgba(232, 42, 42, 0.6);
-  border: 3px solid var(--threat-red);
-  width: 30px;
-  height: 30px;
-  animation: pulse-marker 2s infinite;
+#globeMap.flash-alert {
+  animation: map-flash-alert 1.2s ease-in-out !important;
 }
 
-@keyframes pulse-marker {
+/* PHASE 2: PULSING CONFLICT MARKERS */
+.conflict-marker-pulse {
+  animation: pulse-marker-sentinel 2.5s infinite;
+}
+
+@keyframes pulse-marker-sentinel {
   0% { 
     transform: scale(1);
     opacity: 1;
   }
-  50% { 
-    transform: scale(1.5);
-    opacity: 0.6;
+  40% { 
+    transform: scale(1.6);
+    opacity: 0.7;
+  }
+  80% { 
+    transform: scale(1.1);
+    opacity: 0.9;
   }
   100% { 
     transform: scale(1);
@@ -272,56 +745,226 @@ body {
   }
 }
 
-/* Loading Spinner */
+.leaflet-tile {
+  filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+}
+
+.leaflet-popup-content-wrapper {
+  background: var(--bg2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: var(--body);
+}
+
+.leaflet-popup-content h3 {
+  color: var(--accent);
+  margin-bottom: 8px;
+  font-family: var(--display);
+}
+
+.leaflet-popup-close-button {
+  color: var(--text) !important;
+}
+
+.leaflet-popup-tip {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ANALYSIS PANEL
+   ═══════════════════════════════════════════════════════════ */
+
+.panel-ai {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 15px;
+  margin-bottom: 20px;
+}
+
+.panel-header {
+  font-family: var(--display);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+}
+
+.analysis-text {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.6;
+}
+
 .loading {
   text-align: center;
   padding: 20px;
-  color: #7a9ab0;
+  color: var(--text3);
   font-size: 13px;
+  font-family: var(--mono);
 }
 
 </style>
 </head>
 <body>
 
+<!-- Google Translate Widget -->
+<div id="google_translate_element"></div>
+
 <!-- HEADER -->
-<div class="header">
-  <div class="logo">⚠️ SENTINEL</div>
+<header class="header">
+  <div class="logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 2L2 7v10l10 5 10-5V7L12 2zm0 2.18L20 8.5v7L12 19.82 4 15.5v-7L12 4.18z"/></svg>
+    </div>
+    <div>
+      <div class="logo-text">SENTIN<span>E</span>L</div>
+      <div class="logo-sub">Global Intelligence Platform</div>
+    </div>
+  </div>
   
-  <!-- GLOBAL TENSION INDEX WIDGET (NEW) -->
-  <div class="tension-widget">
-    <div class="tension-label">Global Tension Index</div>
-    <div class="tension-gauge">
-      <div class="tension-fill" id="tensionFill"></div>
-      <div class="tension-needle" id="tensionNeedle"></div>
-      <div class="tension-value" id="tensionValue">--</div>
+  <div class="header-right">
+    <div class="live-badge">
+      <div class="live-dot"></div>
+      LIVE FEED
+    </div>
+    
+    <!-- PHASE 2: Global Tension Index Widget -->
+    <div class="tension-widget">
+      <div class="tension-label">⚠️ Global Tension Index</div>
+      <div class="tension-gauge">
+        <div class="tension-fill" id="tensionFill"></div>
+        <div class="tension-needle" id="tensionNeedle"></div>
+        <div class="tension-value" id="tensionValue">--</div>
+      </div>
+    </div>
+    
+    <div class="world-clocks">
+      <div class="clock">
+        <div class="clock-label">UTC</div>
+        <div class="clock-time" id="utcTime">--:--</div>
+      </div>
+      <div class="clock">
+        <div class="clock-label">DC</div>
+        <div class="clock-time" id="dcTime">--:--</div>
+      </div>
+      <div class="clock">
+        <div class="clock-label">LOCAL</div>
+        <div class="clock-time" id="localTime">--:--</div>
+      </div>
+    </div>
+    
+    <button class="btn-ghost active" id="autoRefreshBtn" onclick="toggleAutoRefresh()">⟳ AUTO</button>
+  </div>
+</header>
+
+<!-- REGION TABS & GLOBE VIEW -->
+<div class="region-tabs">
+  <button class="filter-btn active" data-region="all" onclick="setRegion('all')">🌍 GLOBAL</button>
+  <button class="filter-btn" data-region="americas" onclick="setRegion('americas')">🌎 AMERICAS</button>
+  <button class="filter-btn" data-region="europe" onclick="setRegion('europe')">🇪🇺 EUROPE</button>
+  <button class="filter-btn" data-region="africa_middleeast" onclick="setRegion('africa_middleeast')">🌍 AFRICA & ME</button>
+  <button class="filter-btn" data-region="asia" onclick="setRegion('asia')">🌏 ASIA</button>
+  <button class="filter-btn" data-region="oceania" onclick="setRegion('oceania')">🏝️ OCEANIA</button>
+  <div style="border-left: 1px solid var(--border); height: 20px; margin: 0 4px;"></div>
+  <button class="filter-btn" id="globeViewBtn" onclick="toggleGlobeView()" style="border-color: var(--accent); font-weight: 700;">🛰️ GLOBE VIEW</button>
+</div>
+
+<!-- TICKER -->
+<div class="threat-bar">
+  <div class="threat-label">▶ INTEL</div>
+  <div class="ticker-wrap">
+    <div class="ticker">
+      <span class="ticker-item">🌍 <span>GLOBAL COVERAGE</span> — 150+ Sources Worldwide</span>
+      <span class="ticker-item">🤖 <span>AI ANALYSIS</span> — Google Gemini 1.5 Flash</span>
+      <span class="ticker-item">🐍 <span>NLP ENHANCED</span> — Python FastAPI on Railway</span>
+      <span class="ticker-item">📡 <span>REAL-TIME</span> — Live Aircraft & Satellite Tracking</span>
+      <span class="ticker-item">🔒 <span>SECURE</span> — End-to-End Encryption</span>
+      <span class="ticker-item">🌍 <span>GLOBAL COVERAGE</span> — 150+ Sources Worldwide</span>
+      <span class="ticker-item">🤖 <span>AI ANALYSIS</span> — Google Gemini 1.5 Flash</span>
     </div>
   </div>
 </div>
 
-<!-- MAIN CONTAINER -->
-<div class="main-container">
-  
-  <!-- SIDEBAR (Intelligence Feed) -->
-  <div class="sidebar">
+<!-- MAIN GRID -->
+<div class="main" id="mainContent">
+
+  <!-- SIDEBAR LEFT -->
+  <aside class="sidebar-left" id="sidebarLeft">
+    <button class="collapse-btn collapse-left" onclick="toggleLeftSidebar()" title="Collapse sidebar [">◀</button>
+    
+    <div class="section-header">
+      Intelligence Search
+    </div>
+    
     <input 
       type="text" 
-      class="search-box" 
+      class="search-input" 
       id="searchInput" 
-      placeholder="Enter intelligence query..."
+      placeholder="Enter query (e.g., 'Gaza conflict')..."
     >
     
-    <button class="analyze-btn" id="analyzeBtn" onclick="analyzeIntelligence()">
+    <button class="search-btn" id="searchBtn" onclick="searchIntelligence()">
       🔍 ANALYZE INTELLIGENCE
     </button>
     
-    <div id="feedContainer">
-      <div class="loading">Awaiting analysis...</div>
+    <div class="section-header">
+      Filter by Category
     </div>
-  </div>
+    
+    <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px;">
+      <button class="filter-btn active" onclick="filterFeed('all', this)">ALL</button>
+      <button class="filter-btn" onclick="filterFeed('military', this)">🎖 MILITARY</button>
+      <button class="filter-btn" onclick="filterFeed('political', this)">🏛 POLITICAL</button>
+      <button class="filter-btn" onclick="filterFeed('economic', this)">💰 ECONOMIC</button>
+      <button class="filter-btn" onclick="filterFeed('tech', this)">💻 TECH</button>
+    </div>
+  </aside>
   
-  <!-- MAP -->
-  <div id="mainMap"></div>
+  <!-- CENTER PANEL (Feed or Globe) -->
+  <main class="center-panel">
+    
+    <!-- Globe Container -->
+    <div id="globeContainer" style="display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0;">
+      <div id="globeMap" style="width: 100%; height: 100%;"></div>
+    </div>
+    
+    <!-- Feed Container -->
+    <div id="feedContainer">
+      <div class="loading">Enter a query to begin intelligence analysis...</div>
+    </div>
+    
+  </main>
+  
+  <!-- SIDEBAR RIGHT -->
+  <aside class="sidebar-right" id="sidebarRight">
+    <button class="collapse-btn collapse-right" onclick="toggleRightSidebar()" title="Collapse sidebar ]">▶</button>
+    
+    <div class="panel-ai">
+      <div class="panel-header">🤖 AI Analysis</div>
+      <div class="analysis-text" id="aiAnalysis">
+        Awaiting intelligence query...
+      </div>
+    </div>
+    
+    <div class="section-header">
+      Entity Extraction
+    </div>
+    <div id="entitiesPanel" style="font-size: 12px; color: var(--text3); margin-bottom: 20px;">
+      No entities detected yet.
+    </div>
+    
+    <div class="section-header">
+      Sentiment Analysis
+    </div>
+    <div id="sentimentPanel" style="font-size: 12px; color: var(--text3);">
+      No sentiment data available.
+    </div>
+  </aside>
   
 </div>
 
@@ -330,203 +973,376 @@ body {
 // GLOBAL VARIABLES
 // ═══════════════════════════════════════════════════════════
 
-let mainMap;
-let conflictMarkersLayer;
-let sentimentHistory = []; // Store last 10 sentiment scores
+const API_URL = '/api';
+let currentRegion = 'all';
+let currentCategory = 'all';
+let allArticles = [];
+let autoRefresh = true;
+let refreshInterval;
+let globeMap = null;
+let conflictMarkersLayer = null;
+let sentimentHistory = []; // PHASE 2: Last 10 sentiment scores
 
 // ═══════════════════════════════════════════════════════════
-// HIGH-CONFLICT ZONE COORDINATES (Geocoding Lookup)
+// PHASE 2: HIGH-CONFLICT ZONE COORDINATES
 // ═══════════════════════════════════════════════════════════
 
 const CONFLICT_ZONES = {
-  'gaza': { lat: 31.5, lon: 34.45, name: 'Gaza Strip' },
-  'gaza strip': { lat: 31.5, lon: 34.45, name: 'Gaza Strip' },
-  'palestine': { lat: 31.9, lon: 35.2, name: 'Palestine' },
-  'israel': { lat: 31.5, lon: 34.85, name: 'Israel' },
-  'kyiv': { lat: 50.45, lon: 30.52, name: 'Kyiv' },
-  'kiev': { lat: 50.45, lon: 30.52, name: 'Kyiv' },
-  'ukraine': { lat: 50.45, lon: 30.52, name: 'Ukraine' },
-  'russia': { lat: 55.75, lon: 37.62, name: 'Russia' },
-  'moscow': { lat: 55.75, lon: 37.62, name: 'Moscow' },
-  'donbas': { lat: 48.0, lon: 37.8, name: 'Donbas' },
-  'donetsk': { lat: 48.0, lon: 37.8, name: 'Donetsk' },
-  'taiwan': { lat: 25.03, lon: 121.56, name: 'Taiwan' },
-  'syria': { lat: 33.51, lon: 36.29, name: 'Syria' },
-  'damascus': { lat: 33.51, lon: 36.29, name: 'Damascus' },
-  'iran': { lat: 35.69, lon: 51.42, name: 'Iran' },
-  'tehran': { lat: 35.69, lon: 51.42, name: 'Tehran' },
-  'yemen': { lat: 15.55, lon: 48.52, name: 'Yemen' },
-  'iraq': { lat: 33.31, lon: 44.36, name: 'Iraq' },
-  'baghdad': { lat: 33.31, lon: 44.36, name: 'Baghdad' },
-  'afghanistan': { lat: 34.53, lon: 69.17, name: 'Afghanistan' },
-  'kabul': { lat: 34.53, lon: 69.17, name: 'Kabul' },
-  'china': { lat: 39.90, lon: 116.40, name: 'China' },
-  'beijing': { lat: 39.90, lon: 116.40, name: 'Beijing' },
-  'north korea': { lat: 39.04, lon: 125.76, name: 'North Korea' },
-  'pyongyang': { lat: 39.04, lon: 125.76, name: 'Pyongyang' },
-  'south korea': { lat: 37.57, lon: 126.98, name: 'South Korea' },
-  'seoul': { lat: 37.57, lon: 126.98, name: 'Seoul' }
+  // Middle East
+  'gaza': { lat: 31.5, lon: 34.45, name: 'Gaza Strip', threat: 'CRITICAL' },
+  'gaza strip': { lat: 31.5, lon: 34.45, name: 'Gaza Strip', threat: 'CRITICAL' },
+  'palestine': { lat: 31.9, lon: 35.2, name: 'Palestine', threat: 'HIGH' },
+  'west bank': { lat: 32.0, lon: 35.2, name: 'West Bank', threat: 'HIGH' },
+  'israel': { lat: 31.5, lon: 34.85, name: 'Israel', threat: 'HIGH' },
+  'jerusalem': { lat: 31.77, lon: 35.21, name: 'Jerusalem', threat: 'HIGH' },
+  'lebanon': { lat: 33.89, lon: 35.48, name: 'Lebanon', threat: 'HIGH' },
+  'beirut': { lat: 33.89, lon: 35.48, name: 'Beirut', threat: 'HIGH' },
+  'syria': { lat: 33.51, lon: 36.29, name: 'Syria', threat: 'CRITICAL' },
+  'damascus': { lat: 33.51, lon: 36.29, name: 'Damascus', threat: 'CRITICAL' },
+  'iran': { lat: 35.69, lon: 51.42, name: 'Iran', threat: 'HIGH' },
+  'tehran': { lat: 35.69, lon: 51.42, name: 'Tehran', threat: 'HIGH' },
+  'iraq': { lat: 33.31, lon: 44.36, name: 'Iraq', threat: 'HIGH' },
+  'baghdad': { lat: 33.31, lon: 44.36, name: 'Baghdad', threat: 'HIGH' },
+  'yemen': { lat: 15.55, lon: 48.52, name: 'Yemen', threat: 'CRITICAL' },
+  
+  // Eastern Europe
+  'ukraine': { lat: 50.45, lon: 30.52, name: 'Ukraine', threat: 'CRITICAL' },
+  'kyiv': { lat: 50.45, lon: 30.52, name: 'Kyiv', threat: 'CRITICAL' },
+  'kiev': { lat: 50.45, lon: 30.52, name: 'Kyiv', threat: 'CRITICAL' },
+  'kharkiv': { lat: 49.99, lon: 36.23, name: 'Kharkiv', threat: 'CRITICAL' },
+  'donbas': { lat: 48.0, lon: 37.8, name: 'Donbas', threat: 'CRITICAL' },
+  'donetsk': { lat: 48.0, lon: 37.8, name: 'Donetsk', threat: 'CRITICAL' },
+  'crimea': { lat: 45.0, lon: 34.0, name: 'Crimea', threat: 'HIGH' },
+  'russia': { lat: 55.75, lon: 37.62, name: 'Russia', threat: 'HIGH' },
+  'moscow': { lat: 55.75, lon: 37.62, name: 'Moscow', threat: 'MEDIUM' },
+  
+  // Asia-Pacific
+  'taiwan': { lat: 25.03, lon: 121.56, name: 'Taiwan', threat: 'HIGH' },
+  'china': { lat: 39.90, lon: 116.40, name: 'China', threat: 'MEDIUM' },
+  'beijing': { lat: 39.90, lon: 116.40, name: 'Beijing', threat: 'MEDIUM' },
+  'north korea': { lat: 39.04, lon: 125.76, name: 'North Korea', threat: 'HIGH' },
+  'pyongyang': { lat: 39.04, lon: 125.76, name: 'Pyongyang', threat: 'HIGH' },
+  'afghanistan': { lat: 34.53, lon: 69.17, name: 'Afghanistan', threat: 'CRITICAL' },
+  'kabul': { lat: 34.53, lon: 69.17, name: 'Kabul', threat: 'CRITICAL' },
+  
+  // Africa
+  'sudan': { lat: 15.50, lon: 32.53, name: 'Sudan', threat: 'CRITICAL' },
+  'ethiopia': { lat: 9.02, lon: 38.75, name: 'Ethiopia', threat: 'HIGH' },
+  'somalia': { lat: 2.04, lon: 45.34, name: 'Somalia', threat: 'HIGH' }
 };
 
 // ═══════════════════════════════════════════════════════════
-// INITIALIZE MAP (Single Unified Instance)
+// CLOCKS
 // ═══════════════════════════════════════════════════════════
 
-function initializeMap() {
-  mainMap = L.map('mainMap', {
+function updateClocks() {
+  const now = new Date();
+  
+  document.getElementById('utcTime').textContent = now.toUTCString().slice(17, 22);
+  document.getElementById('dcTime').textContent = now.toLocaleTimeString('en-US', { 
+    timeZone: 'America/New_York', 
+    hour: '2-digit', 
+    minute: '2-digit',
+    hour12: false
+  });
+  document.getElementById('localTime').textContent = now.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  });
+}
+
+setInterval(updateClocks, 1000);
+updateClocks();
+
+// ═══════════════════════════════════════════════════════════
+// GOOGLE TRANSLATE
+// ═══════════════════════════════════════════════════════════
+
+function googleTranslateElementInit() {
+  new google.translate.TranslateElement({
+    pageLanguage: 'en',
+    includedLanguages: 'ar,zh-CN,ru,fr,es,de,ja,ko,hi,pt,tr,fa,he,uk',
+    layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+    autoDisplay: false
+  }, 'google_translate_element');
+}
+
+// ═══════════════════════════════════════════════════════════
+// REGION & CATEGORY FILTERS
+// ═══════════════════════════════════════════════════════════
+
+function setRegion(region) {
+  currentRegion = region;
+  document.querySelectorAll('[data-region]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.region === region);
+  });
+}
+
+function filterFeed(category, button) {
+  currentCategory = category;
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    if (btn.textContent.includes('ALL') || btn.textContent.includes('MILITARY') || 
+        btn.textContent.includes('POLITICAL') || btn.textContent.includes('ECONOMIC') || 
+        btn.textContent.includes('TECH')) {
+      btn.classList.remove('active');
+    }
+  });
+  button.classList.add('active');
+}
+
+function toggleAutoRefresh() {
+  autoRefresh = !autoRefresh;
+  const btn = document.getElementById('autoRefreshBtn');
+  btn.classList.toggle('active', autoRefresh);
+}
+
+// ═══════════════════════════════════════════════════════════
+// COLLAPSIBLE SIDEBARS
+// ═══════════════════════════════════════════════════════════
+
+function toggleLeftSidebar() {
+  const sidebar = document.getElementById('sidebarLeft');
+  const main = document.getElementById('mainContent');
+  const btn = document.querySelector('.collapse-left');
+  const isCollapsed = sidebar.classList.toggle('collapsed');
+  
+  if (isCollapsed) {
+    main.classList.add('left-collapsed');
+    btn.textContent = '▶';
+  } else {
+    main.classList.remove('left-collapsed');
+    btn.textContent = '◀';
+  }
+  updateCollapsedState();
+}
+
+function toggleRightSidebar() {
+  const sidebar = document.getElementById('sidebarRight');
+  const main = document.getElementById('mainContent');
+  const btn = document.querySelector('.collapse-right');
+  const isCollapsed = sidebar.classList.toggle('collapsed');
+  
+  if (isCollapsed) {
+    main.classList.add('right-collapsed');
+    btn.textContent = '◀';
+  } else {
+    main.classList.remove('right-collapsed');
+    btn.textContent = '▶';
+  }
+  updateCollapsedState();
+}
+
+function updateCollapsedState() {
+  const main = document.getElementById('mainContent');
+  const leftCollapsed = document.getElementById('sidebarLeft').classList.contains('collapsed');
+  const rightCollapsed = document.getElementById('sidebarRight').classList.contains('collapsed');
+  
+  if (leftCollapsed && rightCollapsed) {
+    main.classList.add('both-collapsed');
+  } else {
+    main.classList.remove('both-collapsed');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// GLOBE VIEW TOGGLE
+// ═══════════════════════════════════════════════════════════
+
+function toggleGlobeView() {
+  const globeContainer = document.getElementById('globeContainer');
+  const feedContainer = document.getElementById('feedContainer');
+  const globeBtn = document.getElementById('globeViewBtn');
+  
+  if (globeContainer.style.display === 'none') {
+    globeContainer.style.display = 'block';
+    feedContainer.style.display = 'none';
+    globeBtn.classList.add('active');
+    
+    if (!globeMap) {
+      initializeGlobe();
+    }
+  } else {
+    globeContainer.style.display = 'none';
+    feedContainer.style.display = 'block';
+    globeBtn.classList.remove('active');
+  }
+}
+
+function initializeGlobe() {
+  globeMap = L.map('globeMap', {
     center: [20, 0],
     zoom: 2,
     minZoom: 2,
     maxZoom: 18
   });
   
-  // Dark map tiles
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: 'SENTINEL Intelligence',
+    attribution: 'SENTINEL',
     maxZoom: 19
-  }).addTo(mainMap);
+  }).addTo(globeMap);
   
-  // Layer group for conflict markers
-  conflictMarkersLayer = L.layerGroup().addTo(mainMap);
+  conflictMarkersLayer = L.layerGroup().addTo(globeMap);
   
-  console.log('✅ Map initialized');
+  console.log('✅ Globe initialized');
 }
 
 // ═══════════════════════════════════════════════════════════
-// FEATURE 1: AUTOMATED GEOCODING & MAPPING
+// PHASE 2: FEATURE 1 - AUTOMATED GEOCODING
 // ═══════════════════════════════════════════════════════════
 
 function placeConflictMarkers(entities) {
   if (!entities || !entities.locations || entities.locations.length === 0) {
-    console.log('No locations to map');
+    console.log('📍 No locations to map');
     return;
   }
   
-  console.log('📍 Placing conflict markers for:', entities.locations);
+  console.log('📍 Processing locations:', entities.locations);
+  
+  if (!globeMap || !conflictMarkersLayer) {
+    console.warn('⚠️ Map not initialized');
+    return;
+  }
+  
+  conflictMarkersLayer.clearLayers();
+  let firstMarkerPlaced = false;
   
   entities.locations.forEach(location => {
-    const locationKey = location.toLowerCase();
+    const locationKey = location.toLowerCase().trim();
     const coords = CONFLICT_ZONES[locationKey];
     
     if (coords) {
-      // Create pulsing red marker
+      console.log(`✅ Placing marker: ${coords.name}`);
+      
+      let markerColor = '#e82a2a';
+      if (coords.threat === 'HIGH') markerColor = '#f5a623';
+      if (coords.threat === 'MEDIUM') markerColor = '#2a8de8';
+      
       const marker = L.circleMarker([coords.lat, coords.lon], {
-        radius: 15,
-        fillColor: '#e82a2a',
+        radius: 18,
+        fillColor: markerColor,
         color: '#fff',
         weight: 3,
         opacity: 1,
-        fillOpacity: 0.6,
-        className: 'conflict-marker'
+        fillOpacity: 0.7,
+        className: 'conflict-marker-pulse'
       });
       
       marker.bindPopup(`
-        <div style="font-family: Arial; padding: 10px;">
-          <strong style="color: #e82a2a;">⚠️ ${coords.name}</strong><br>
-          <span style="font-size: 12px; color: #555;">Conflict Zone Detected</span>
+        <div style="font-family: Arial; padding: 12px; min-width: 200px;">
+          <div style="font-size: 16px; font-weight: bold; color: ${markerColor}; margin-bottom: 8px;">
+            ⚠️ ${coords.name}
+          </div>
+          <div style="font-size: 11px; color: #555;">
+            <strong>Threat Level:</strong> <span style="color: ${markerColor};">${coords.threat}</span>
+          </div>
         </div>
       `);
       
       marker.addTo(conflictMarkersLayer);
       
-      // Fly to first detected zone
-      if (entities.locations.indexOf(location) === 0) {
-        mainMap.flyTo([coords.lat, coords.lon], 6, {
-          duration: 1.5
-        });
+      if (!firstMarkerPlaced) {
+        globeMap.flyTo([coords.lat, coords.lon], 6, { duration: 2 });
+        firstMarkerPlaced = true;
       }
     }
   });
 }
 
 // ═══════════════════════════════════════════════════════════
-// FEATURE 2: VISUAL SENTIMENT INTEGRATION
+// PHASE 2: FEATURE 2 - VISUAL SENTIMENT INTEGRATION
 // ═══════════════════════════════════════════════════════════
 
-function applySentimentVisuals(sentiment, feedItemElement) {
+function applySentimentVisuals(sentiment, articleElement) {
+  if (!sentiment || typeof sentiment.polarity === 'undefined') return;
+  
   const polarity = sentiment.polarity;
   
-  // Critical negative sentiment (below -0.4)
   if (polarity < -0.4) {
-    console.log('🚨 Critical sentiment detected:', polarity);
+    console.log('🚨 CRITICAL SENTIMENT:', polarity);
     
-    // Add red glow to feed item
-    feedItemElement.classList.add('critical-sentiment');
+    articleElement.classList.add('critical-sentiment');
     
-    // Flash the map
-    const mapElement = document.getElementById('mainMap');
-    mapElement.classList.add('flash-alert');
+    const metaDiv = articleElement.querySelector('.article-meta');
+    if (metaDiv && !metaDiv.querySelector('.priority-badge')) {
+      const badge = document.createElement('span');
+      badge.className = 'priority-badge priority-critical';
+      badge.textContent = '🚨 PRIORITY';
+      metaDiv.appendChild(badge);
+    }
     
-    setTimeout(() => {
-      mapElement.classList.remove('flash-alert');
-    }, 1000);
+    flashMap();
   }
 }
 
-function getSentimentLabel(polarity) {
-  if (polarity >= 0.1) return 'positive';
-  if (polarity <= -0.1) return 'negative';
-  return 'neutral';
+function flashMap() {
+  const mapElement = document.getElementById('globeMap');
+  if (mapElement) {
+    mapElement.classList.add('flash-alert');
+    setTimeout(() => {
+      mapElement.classList.remove('flash-alert');
+    }, 1200);
+  }
 }
 
 // ═══════════════════════════════════════════════════════════
-// FEATURE 3: GLOBAL TENSION INDEX
+// PHASE 2: FEATURE 3 - GLOBAL TENSION INDEX
 // ═══════════════════════════════════════════════════════════
 
 function updateTensionIndex(polarity) {
-  // Add to history (keep last 10)
   sentimentHistory.push(polarity);
   if (sentimentHistory.length > 10) {
     sentimentHistory.shift();
   }
   
-  // Calculate average
   const average = sentimentHistory.reduce((sum, val) => sum + val, 0) / sentimentHistory.length;
-  
-  // Convert to 0-100 scale (more negative = higher tension)
-  // -1 (very negative) = 100% tension
-  // 0 (neutral) = 50% tension
-  // +1 (very positive) = 0% tension
   const tensionPercent = Math.round((1 - average) * 50);
   
-  // Update UI
-  document.getElementById('tensionFill').style.width = tensionPercent + '%';
-  document.getElementById('tensionNeedle').style.left = tensionPercent + '%';
-  document.getElementById('tensionValue').textContent = tensionPercent + '%';
+  const fillEl = document.getElementById('tensionFill');
+  const needleEl = document.getElementById('tensionNeedle');
+  const valueEl = document.getElementById('tensionValue');
   
-  console.log(`📊 Tension Index: ${tensionPercent}% (avg sentiment: ${average.toFixed(2)})`);
+  if (fillEl && needleEl && valueEl) {
+    fillEl.style.width = tensionPercent + '%';
+    needleEl.style.left = tensionPercent + '%';
+    valueEl.textContent = tensionPercent + '%';
+    
+    console.log(`📊 Tension: ${tensionPercent}% (sentiment: ${average.toFixed(2)})`);
+  }
 }
 
 // ═══════════════════════════════════════════════════════════
-// MAIN ANALYSIS FUNCTION
+// MAIN SEARCH FUNCTION
 // ═══════════════════════════════════════════════════════════
 
-async function analyzeIntelligence() {
+async function searchIntelligence() {
   const query = document.getElementById('searchInput').value.trim();
   
   if (!query) {
-    alert('Please enter an intelligence query');
+    alert('Please enter a search query');
     return;
   }
   
-  const btn = document.getElementById('analyzeBtn');
+  const btn = document.getElementById('searchBtn');
   const feedContainer = document.getElementById('feedContainer');
   
   btn.disabled = true;
   btn.textContent = '⏳ ANALYZING...';
-  feedContainer.innerHTML = '<div class="loading">Processing intelligence...</div>';
+  feedContainer.innerHTML = '<div class="loading">Processing intelligence query...</div>';
   
-  // Clear old markers
-  conflictMarkersLayer.clearLayers();
+  if (conflictMarkersLayer) {
+    conflictMarkersLayer.clearLayers();
+  }
   
   try {
-    // Call Vercel API
-    const response = await fetch('/api', {
+    // Call API
+    const response = await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: 'analyze',
-        query: query
+        query: query,
+        region: currentRegion
       })
     });
     
@@ -537,47 +1353,76 @@ async function analyzeIntelligence() {
     const data = await response.json();
     console.log('API Response:', data);
     
-    // Create feed item
-    const feedItem = document.createElement('div');
-    feedItem.className = 'feed-item';
+    // Update UI
+    document.getElementById('aiAnalysis').textContent = 
+      data.summary || 'Analysis complete. Check entities and sentiment panels for details.';
     
-    const sentimentLabel = getSentimentLabel(data.sentiment.polarity);
+    // Update entities panel
+    if (data.entities) {
+      let entitiesHTML = '';
+      if (data.entities.locations && data.entities.locations.length > 0) {
+        entitiesHTML += `<div><strong>Locations:</strong> ${data.entities.locations.join(', ')}</div>`;
+      }
+      if (data.entities.people && data.entities.people.length > 0) {
+        entitiesHTML += `<div><strong>People:</strong> ${data.entities.people.join(', ')}</div>`;
+      }
+      if (data.entities.organizations && data.entities.organizations.length > 0) {
+        entitiesHTML += `<div><strong>Organizations:</strong> ${data.entities.organizations.join(', ')}</div>`;
+      }
+      document.getElementById('entitiesPanel').innerHTML = entitiesHTML || 'No entities detected';
+    }
     
-    feedItem.innerHTML = `
-      <div class="feed-title">${query}</div>
-      <div class="feed-summary">${data.summary || 'Analysis complete'}</div>
-      <div class="feed-meta">
-        <span>Entities: ${data.entities?.locations?.join(', ') || 'None'}</span>
+    // Update sentiment panel
+    if (data.sentiment) {
+      const sentimentLabel = getSentimentLabel(data.sentiment.polarity);
+      document.getElementById('sentimentPanel').innerHTML = `
+        <div><strong>Polarity:</strong> ${data.sentiment.polarity.toFixed(2)}</div>
+        <div><strong>Label:</strong> ${data.sentiment.label || sentimentLabel}</div>
+        <div style="margin-top: 8px;">
+          <span class="sentiment-badge sentiment-${sentimentLabel}">
+            ${sentimentLabel.toUpperCase()}
+          </span>
+        </div>
+      `;
+    }
+    
+    // Create article card
+    const articleCard = document.createElement('div');
+    articleCard.className = 'article-card';
+    articleCard.id = 'article-' + Date.now();
+    
+    const sentimentLabel = data.sentiment ? getSentimentLabel(data.sentiment.polarity) : 'neutral';
+    
+    articleCard.innerHTML = `
+      <div class="article-headline">${query}</div>
+      <div class="article-summary">${data.summary || 'Intelligence analysis complete.'}</div>
+      <div class="article-meta">
+        <span class="source-badge src-intelligence">OSINT</span>
         <span class="sentiment-badge sentiment-${sentimentLabel}">
-          ${sentimentLabel.toUpperCase()} (${data.sentiment.polarity.toFixed(2)})
+          ${sentimentLabel.toUpperCase()}
         </span>
       </div>
     `;
     
     feedContainer.innerHTML = '';
-    feedContainer.appendChild(feedItem);
+    feedContainer.appendChild(articleCard);
     
-    // FEATURE 1: Place conflict markers
+    // PHASE 2: Apply enhancements
     if (data.entities) {
       placeConflictMarkers(data.entities);
     }
     
-    // FEATURE 2: Apply sentiment visuals
     if (data.sentiment) {
-      applySentimentVisuals(data.sentiment, feedItem);
-    }
-    
-    // FEATURE 3: Update tension index
-    if (data.sentiment) {
+      applySentimentVisuals(data.sentiment, articleCard);
       updateTensionIndex(data.sentiment.polarity);
     }
     
   } catch (error) {
-    console.error('Analysis error:', error);
+    console.error('Search error:', error);
     feedContainer.innerHTML = `
-      <div style="color: #e82a2a; padding: 15px; text-align: center;">
+      <div style="color: var(--red); padding: 20px; text-align: center;">
         ⚠️ Analysis failed<br>
-        <span style="font-size: 11px; color: #7a9ab0;">${error.message}</span>
+        <span style="font-size: 11px; color: var(--text3);">${error.message}</span>
       </div>
     `;
   } finally {
@@ -586,22 +1431,47 @@ async function analyzeIntelligence() {
   }
 }
 
+function getSentimentLabel(polarity) {
+  if (polarity >= 0.1) return 'positive';
+  if (polarity <= -0.1) return 'negative';
+  return 'neutral';
+}
+
+// ═══════════════════════════════════════════════════════════
+// KEYBOARD SHORTCUTS
+// ═══════════════════════════════════════════════════════════
+
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT') return;
+  
+  switch(e.key) {
+    case '[':
+      toggleLeftSidebar();
+      break;
+    case ']':
+      toggleRightSidebar();
+      break;
+    case 'g':
+    case 'G':
+      toggleGlobeView();
+      break;
+  }
+});
+
+// Enter key triggers search
+document.getElementById('searchInput').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    searchIntelligence();
+  }
+});
+
 // ═══════════════════════════════════════════════════════════
 // INITIALIZATION
 // ═══════════════════════════════════════════════════════════
 
 window.addEventListener('load', () => {
-  initializeMap();
-  console.log('🚀 SENTINEL Phase 2 Loaded');
-});
-
-// Allow Enter key to trigger analysis
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('searchInput').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-      analyzeIntelligence();
-    }
-  });
+  console.log('🚀 SENTINEL Global Platform Loaded');
+  console.log('✅ Phase 2 Enhancements Active');
 });
 
 </script>
